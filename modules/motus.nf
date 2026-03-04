@@ -10,17 +10,22 @@ process MOTUS {
     path "${sample_id}_motus.log", emit: log
     
     script:
+    def db_bind = "${params.motus_db_host}:/opt/conda/envs/motus4/lib/python3.12/site-packages/motus/db_mOTU"
+    
     """
-    motus profile \\
-        -f ${read1} \\
-        -r ${read2} \\
-        -n ${sample_id} \\
-        -t ${task.cpus} \\
-        -g ${params.motus_marker_gene_cutoff} \\
-        -l ${params.motus_min_length} \\
-        -y ${params.motus_counting_mode} \\
-        ${params.motus_extra_args} \\
-        -o ${sample_id}_motus_profile.txt \\
-        2> ${sample_id}_motus.log
+    singularity --silent exec \\
+        --bind ${db_bind} \\
+        ${params.motus_container} \\
+        motus profile \\
+            -f ${read1} \\
+            -r ${read2} \\
+            -n ${sample_id} \\
+            -t ${task.cpus} \\
+            -g ${params.motus_marker_gene_cutoff} \\
+            -l ${params.motus_min_length} \\
+            -y ${params.motus_counting_mode} \\
+            ${params.motus_extra_args} \\
+            -o ${sample_id}_motus_profile.txt \\
+            2> ${sample_id}_motus.log
     """
 }
