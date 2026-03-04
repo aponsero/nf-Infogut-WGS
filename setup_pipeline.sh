@@ -188,7 +188,7 @@ else
         log_info "Extracting database..."
         tar -xzvf db_mOTU.tar.gz >> "${LOGFILE}" 2>&1
         
-        if [ -f "db_mOTU/db_mOTU_versions" ]; then
+        if [ -f "db_mOTU/mOTUsv4.0.db" ]; then
             log_success "mOTUs database extracted successfully"
             
             # Cleanup
