@@ -321,6 +321,12 @@ sample3,/path/to/sample3_R1.fastq.gz,/path/to/sample3_R2.fastq.gz
 
 ## Running the Pipeline
 
+To solve potential issue of the singularity tmp directory, please export the SINGULARITY_TMPDIR in your run script
+
+```bash
+export SINGULARITY_TMPDIR=/path/to/directory/with/space
+```
+
 ### Basic Usage
 
 **If you used the setup script (databases in default locations):**
