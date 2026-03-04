@@ -155,6 +155,7 @@ mkdir -p pipeline_resources/{databases/{motus,metaphlan4},singularity_cache}
 cd pipeline_resources/databases/motus
 wget https://zenodo.org/records/17668622/files/db_mOTU.tar.gz
 tar -xzvf db_mOTU.tar.gz
+touch db_mOTU/db_mOTU.downloaded
 rm db_mOTU.tar.gz  # Optional: save space
 ```
 
@@ -222,29 +223,37 @@ mOTUs has a **hardcoded database path** within its installation directory and do
 2. We want to store the database on the host system to avoid downloading it into every container
 3. The database is large (~7 GB) and should be shared across pipeline runs
 
-### The Solution: Bind Mounting
+### The Solution: Manual Singularity Execution with Bind Mounting
 
-This pipeline implements a **bind mount workaround** using Singularity's `containerOptions` to map the host database into the container at the expected location.
+This pipeline implements a **manual singularity execution workaround** to handle mOTUs' database requirements and avoid Singularity overlay warnings.
 
 **How it works:**
 
-1. **Download the database** to a persistent location on your host system (e.g., `/shared/databases/motus`)
+1. **Download the database** to a persistent location on your host system in: /path/to/databases/motus/db_mOTU/
 
-2. **Configure the host path** in `nextflow.config`:
-   ```groovy
-   params.motus_db_host = '/shared/databases/motus'
+2. **Configure the pipeline** with three required paths in your run command or config:
+   ```bash
+   nextflow run main.nf \
+       --motus_db_host /path/to/databases/motus/db_mOTU \
+       --motus_container /path/to/singularity_cache/aponsero-infogut-motus-4.0.4.img \
+       --singularity_cache_dir /path/to/singularity_cache
    ```
 
-3. **Automatic bind mounting** - The pipeline automatically binds this path into the container:
-   ```groovy
-   process {
-       withName: 'MOTUS' {
-           containerOptions = "--bind ${params.motus_db_host}:/opt/conda/envs/motus4/lib/python3.12/site-packages/motus/db_mOTU"
-       }
-   }
+3. **Manual singularity execution** - The mOTUs module bypasses Nextflow's container management and directly calls singularity with the `--silent` flag:
+   ```nextflow
+   singularity --silent exec \
+       --bind ${params.motus_db_host}:/opt/conda/envs/motus4/lib/python3.12/site-packages/motus/db_mOTU \
+       ${params.motus_container} \
+       motus profile ...
    ```
 
-4. **mOTUs runs successfully** - The tool finds its database at the expected internal path, but the data actually comes from your host system
+4. **Benefits:**
+   - `--silent` flag suppresses Singularity overlay warnings
+   - Direct bind mounting avoids Nextflow containerOptions issues
+   - mOTUs finds its database at the expected internal path
+   - Database remains on the host system for easy updates
+
+**Note:** This approach is specific to mOTUs. All other tools (FastQC, Fastp, MetaPhlAn4, MultiQC, ...) use standard Nextflow container management.
 
 ### Important Considerations
 
