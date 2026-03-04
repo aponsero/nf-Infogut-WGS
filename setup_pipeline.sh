@@ -42,19 +42,35 @@ print_header() {
 }
 
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "${LOGFILE}"
+    if [ -n "${LOGFILE:-}" ]; then
+        echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "${LOGFILE}"
+    else
+        echo -e "${GREEN}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1"
+    fi
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "${LOGFILE}"
+    if [ -n "${LOGFILE:-}" ]; then
+        echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "${LOGFILE}"
+    else
+        echo -e "${YELLOW}[WARN]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1"
+    fi
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "${LOGFILE}"
+    if [ -n "${LOGFILE:-}" ]; then
+        echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "${LOGFILE}"
+    else
+        echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1"
+    fi
 }
 
 log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "${LOGFILE}"
+    if [ -n "${LOGFILE:-}" ]; then
+        echo -e "${GREEN}[SUCCESS]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "${LOGFILE}"
+    else
+        echo -e "${GREEN}[SUCCESS]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1"
+    fi
 }
 
 check_command() {
@@ -205,6 +221,7 @@ declare -A CONTAINERS=(
     ["quay.io-biocontainers-fastp-0.23.4--hadf994f_3.img"]="docker://quay.io/biocontainers/fastp:0.23.4--hadf994f_3"
     ["quay.io-biocontainers-metaphlan-4.2.4--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/metaphlan:4.2.4--pyhdfd78af_0"
     ["quay.io-biocontainers-multiqc-1.21--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0"
+    ["quay.io-biocontainers-taxpasta-0.7.0--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/taxpasta:0.7.0--pyhdfd78af_0"
     ["aponsero-infogut-motus-4.0.4.img"]="library://aponsero/infogut/motus:4.0.4"
 )
 
