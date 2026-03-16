@@ -34,7 +34,8 @@ include { METAPHLAN4_DB }           from './modules/metaphlan4_db'
 include { METAPHLAN4 }              from './modules/metaphlan4'
 include { MOTUS }                   from './modules/motus'
 include { MULTIQC }                 from './modules/multiqc'
-
+include { METASTANDARD as METAPHLAN_METASTANDARD }        from './modules/MetaStandard'
+include { METASTANDARD as MOTUS_METASTANDARD }       from './modules/MetaStandard'
 /*
 ========================================================================================
     MAIN WORKFLOW
@@ -91,6 +92,13 @@ workflow {
     // mOTUs profiling (parallel) - database mounted via containerOptions
     MOTUS(FASTP.out.reads)
     
+    // MetaStandard - format standardization
+    motus_files = MOTUS.out.profile.collect()
+    metaphlan_files = METAPHLAN4.out.profile.collect()
+
+    METAPHLAN_METASTANDARD(metaphlan_files)
+    MOTUS_METASTANDARD(motus_files)
+
     // Collect all QC files for MultiQC
     ch_multiqc_files = Channel.empty()
     ch_multiqc_files = ch_multiqc_files.mix(FASTQC_RAW.out.zip.collect().ifEmpty([]))

@@ -10,6 +10,12 @@ This Nextflow pipeline performs comprehensive metagenomic profiling of paired-en
 
 ---
 
+## Testing Instructions
+
+Instructions for testing the pipeline's reproducibility are available as 
+[Markdown](docs/testing_readme.md), as well as in 
+[PDF version](docs/testing_readme.pdf).
+
 ## Workflow Description
 
 The pipeline implements the following workflow:
@@ -26,6 +32,10 @@ graph TD
     D --> G
     E --> H[MetaPhlAn4 Profiles]
     F --> I[mOTUs Profiles]
+    I --> X[MetaStandard]
+    H --> X[MetaStandard]
+    X --> Y[mOTUs standardized file]
+    X --> Z[MetaPhlAn4 standardized file]
 ```
 
 ### Workflow Steps

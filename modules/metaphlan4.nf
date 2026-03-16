@@ -7,7 +7,7 @@ process METAPHLAN4 {
     path(db)
     
     output:
-    path "${sample_id}_profile.txt", emit: profile
+    path "${sample_id}_metaphlan4_profile.txt", emit: profile
     path "${sample_id}.mapout.bz2", emit: mapout, optional: true
     
     script:
@@ -54,6 +54,6 @@ process METAPHLAN4 {
         ${verbose} \\
         --sample_id ${sample_id} \\
         ${params.metaphlan_extra_args} \\
-        -o ${sample_id}_profile.txt
+        -o ${sample_id}_metaphlan4_profile.txt 
     """
 }
