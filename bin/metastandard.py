@@ -159,14 +159,11 @@ def parse_metaphlan4(files,level):
         else: 
             raise ValueError("The other level than species was not implemented yet")
             
-        # check if abundance column add up to 100
+        # normalize sample 0-1
         abundance_sum = df_sub.loc[:,sample].sum()
             
-        if math.ceil(abundance_sum) == 100:
-            df_sub[sample] = df_sub[sample] / abundance_sum
-        else: 
-            raise ValueError(f"Abundance column '{sample}' sums to {abundance_sum}, not 100!")
-                
+        df_sub[sample] = df_sub[sample] / abundance_sum
+
         # Add the cleaned subdf to the list
         merged.append(df_sub)
 
