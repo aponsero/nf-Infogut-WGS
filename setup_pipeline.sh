@@ -190,7 +190,7 @@ else
         
         if [ -f "db_mOTU/mOTUsv4.0.db" ]; then
             log_success "mOTUs database extracted successfully"
-            touch db_mOTU.downloaded
+            touch db_mOTU/db_mOTU.downloaded
             
             # Cleanup
             log_info "Removing tarball to save space..."
