@@ -27,6 +27,7 @@ log.info """\
 ========================================================================================
 */
 
+include { FIX_HEADERS }   from './modules/fix_headers'
 include { FASTQC as FASTQC_RAW }   from './modules/fastqc'
 include { FASTP }                   from './modules/fastp'
 include { FASTQC as FASTQC_CLEAN } from './modules/fastqc'
@@ -77,11 +78,14 @@ workflow {
         ch_metaphlan_db = Channel.value(file(params.metaphlan_db))
     }
     
+    // Fixing headers 
+    FIX_HEADERS(ch_input_reads)
+
     // FastQC on raw reads
-    FASTQC_RAW(ch_input_reads, "raw")
+    FASTQC_RAW(FIX_HEADERS.out.reads, "raw")
     
     // Fastp trimming and filtering
-    FASTP(ch_input_reads)
+    FASTP(FIX_HEADERS.out.reads)
     
     // FastQC on cleaned reads
     FASTQC_CLEAN(FASTP.out.reads, "clean")
