@@ -14,9 +14,8 @@ process MOTUS {
     
     """
     singularity --silent exec \\
-        --bind ${db_bind} \\
         ${params.motus_container} \\
-        motus profile \\
+	motus profile \\
             -f ${read1} \\
             -r ${read2} \\
             -n ${sample_id} \\
@@ -24,6 +23,7 @@ process MOTUS {
             -g ${params.motus_marker_gene_cutoff} \\
             -l ${params.motus_min_length} \\
             -y ${params.motus_counting_mode} \\
+	    -db ${params.motus_db_host} \\
             ${params.motus_extra_args} \\
             -o ${sample_id}_motus_profile.txt \\
             2> ${sample_id}_motus.log

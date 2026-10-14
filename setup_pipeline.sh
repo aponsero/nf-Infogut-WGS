@@ -224,6 +224,7 @@ declare -A CONTAINERS=(
     ["quay.io-biocontainers-multiqc-1.21--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0"
     ["quay.io-biocontainers-taxpasta-0.7.0--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/taxpasta:0.7.0--pyhdfd78af_0"
     ["aponsero-infogut-motus-4.0.4.img"]="library://aponsero/infogut/motus:4.0.4"
+    ["quay.io-biocontainers-motus-4.1.0--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/motus:4.1.0--pyhdfd78af_0"
 )
 
 CONTAINER_COUNT=0
@@ -239,13 +240,8 @@ for img_name in "${!CONTAINERS[@]}"; do
         
         uri="${CONTAINERS[$img_name]}"
         
-        # Special handling for mOTUs (needs --arch flag)
-        if [[ "${img_name}" == *"motus"* ]]; then
-            singularity pull --name "${img_name}" --arch amd64 "${uri}" >> "${LOGFILE}" 2>&1
-        else
-            singularity pull --name "${img_name}" "${uri}" >> "${LOGFILE}" 2>&1
-        fi
-        
+        singularity pull --name "${img_name}" "${uri}" >> "${LOGFILE}" 2>&1
+                
         if [ $? -eq 0 ]; then
             log_success "[${CONTAINER_COUNT}/${TOTAL_CONTAINERS}] ${img_name} downloaded successfully"
         else
