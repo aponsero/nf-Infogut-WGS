@@ -64,7 +64,7 @@ graph TD
    - Runs in parallel with mOTUs
 
 5. **Taxonomic Profiling - mOTUs**
-   - Tool: mOTUs v4.0.4
+   - Tool: mOTUs v4.1.0
    - Performs marker gene-based taxonomic profiling using universal single-copy marker genes
    - Complementary approach to MetaPhlAn4
    - Runs in parallel with MetaPhlAn4
@@ -83,7 +83,7 @@ graph TD
 | **FastQC** | 0.12.1 | quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0 | Quality control assessment |
 | **Fastp** | 0.23.4 | quay.io/biocontainers/fastp:0.23.4--hadf994f_3 | Read trimming and filtering |
 | **MetaPhlAn** | 4.2.4 | quay.io/biocontainers/metaphlan:4.2.4--pyhdfd78af_0 | Taxonomic profiling |
-| **mOTUs** | 4.0.4 | library://aponsero/infogut/motus:4.0.4 | Taxonomic profiling |
+| **mOTUs** | 4.1.0 | library://aponsero/infogut/motus:4.0.4 | Taxonomic profiling |
 | **MultiQC** | 1.21 | quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0 | Report aggregation |
 
 ### Container Technology
@@ -126,7 +126,7 @@ The pipeline includes an automated setup script that downloads all required data
    - FastQC v0.12.1
    - Fastp v0.23.4
    - MetaPhlAn v4.2.4
-   - mOTUs v4.0.4
+   - mOTUs v4.1.0
    - MultiQC v1.21
 
 4. Downloads and installs MetaPhlAn4 database
@@ -182,8 +182,8 @@ singularity pull --name quay.io-biocontainers-fastp-0.23.4--hadf994f_3.img \
 singularity pull --name quay.io-biocontainers-metaphlan-4.2.4--pyhdfd78af_0.img \
   docker://quay.io/biocontainers/metaphlan:4.2.4--pyhdfd78af_0
 
-singularity pull --name aponsero-infogut-motus-4.0.4.img --arch amd64 \
-  library://aponsero/infogut/motus:4.0.4
+singularity pull --name quay.io-biocontainers-motus-4.1.0--pyhdfd78af_0.img \
+  docker://quay.io/biocontainers/motus:4.1.0--pyhdfd78af_0
 
 singularity pull --name quay.io-biocontainers-multiqc-1.21--pyhdfd78af_0.img \
   docker://quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0
@@ -206,7 +206,7 @@ params {
     singularity_cache_dir = '/path/to/pipeline_resources/singularity_cache'
     database_cache_dir    = '/path/to/pipeline_resources/databases'
     metaphlan_db          = '/path/to/pipeline_resources/databases/metaphlan4/metaphlan_db'
-    motus_db_host         = '/path/to/pipeline_resources/databases/motus/db_mOTU'
+    motus_db_host         = '/path/to/pipeline_resources/databases/motus/'
 }
 ```
 
