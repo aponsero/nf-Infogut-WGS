@@ -1,5 +1,5 @@
 process MULTIQC {
-    publishDir "${params.outdir}/07_multiqc", mode: 'copy'
+    publishDir "${params.outdir}/08_multiqc", mode: 'copy'
     
     input:
     path('*')

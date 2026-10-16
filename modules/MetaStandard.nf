@@ -1,5 +1,5 @@
 process METASTANDARD {
-    publishDir "${params.outdir}/06_metastandard", mode: 'copy'
+    publishDir "${params.outdir}/07_metastandard", mode: 'copy'
 
     input:
     path profile_files
@@ -16,4 +16,3 @@ process METASTANDARD {
         --run_id ${params.run_id}
     """
 }
-

@@ -5,7 +5,7 @@
 This Nextflow pipeline performs comprehensive metagenomic profiling of paired-end whole genome sequencing (WGS) data. The pipeline integrates quality control, read preprocessing, and taxonomic profiling using two complementary tools (MetaPhlAn4 and mOTUs) to provide robust microbial community characterization.
 
 **Pipeline Version:** 1.0.0  
-**Author:** Alise Ponsero  
+**Author:** Alise Ponsero  & Petra Polakovicova
 **Nextflow Version Required:** ≥22.10.0
 
 ---
@@ -61,15 +61,23 @@ graph TD
    - Performs marker gene-based taxonomic profiling
    - Uses species-specific marker genes from the MetaPhlAn database
    - Provides relative abundance estimates at multiple taxonomic levels
-   - Runs in parallel with mOTUs
+   - Runs in parallel with mOTUs and Kraken2
 
 5. **Taxonomic Profiling - mOTUs**
    - Tool: mOTUs v4.1.0
    - Performs marker gene-based taxonomic profiling using universal single-copy marker genes
    - Complementary approach to MetaPhlAn4
-   - Runs in parallel with MetaPhlAn4
+   - Runs in parallel with MetaPhlAn4 and Kraken2
 
-6. **Quality Report Aggregation**
+6. **Taxonomic Profiling - Kraken2 + Bracken**
+   - Tools: Kraken2 v2.17.1 (`k2 classify`) + Bracken v3.1 (`est_abundance.py`)
+   - Kraken2 performs k-mer-based classification of every read against a whole-genome reference database (path set via `--kraken2_db`)
+   - Bracken re-estimates species-level abundances from the Kraken2 report, redistributing reads assigned to higher taxonomic levels
+   - Bracken read length is set via `--bracken_read_len` (default: 150), and only the matching `database<N>mers.kmer_distrib` file is staged
+   - Complementary approach to MetaPhlAn4 and mOTUs (whole-genome k-mers instead of marker genes)
+   - Runs in parallel with MetaPhlAn4 and mOTUs
+
+7. **Quality Report Aggregation**
    - Tool: MultiQC v1.21
    - Aggregates QC metrics from FastQC and Fastp
    - Generates comprehensive HTML report
@@ -83,7 +91,9 @@ graph TD
 | **FastQC** | 0.12.1 | quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0 | Quality control assessment |
 | **Fastp** | 0.23.4 | quay.io/biocontainers/fastp:0.23.4--hadf994f_3 | Read trimming and filtering |
 | **MetaPhlAn** | 4.2.4 | quay.io/biocontainers/metaphlan:4.2.4--pyhdfd78af_0 | Taxonomic profiling |
-| **mOTUs** | 4.1.0 | library://aponsero/infogut/motus:4.0.4 | Taxonomic profiling |
+| **mOTUs** | 4.1.0 | quay.io/biocontainers/motus:4.1.0--pyhdfd78af_0 | Taxonomic profiling |
+| **Kraken2** | 2.17.1 | quay.io/biocontainers/kraken2:2.17.1--pl5321h077b44d_0 | Taxonomic read classification |
+| **Bracken** | 3.1 | quay.io/biocontainers/bracken:3.1--h9948957_0 | Abundance re-estimation from Kraken2 reports |
 | **MultiQC** | 1.21 | quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0 | Report aggregation |
 
 ### Container Technology
@@ -184,6 +194,12 @@ singularity pull --name quay.io-biocontainers-metaphlan-4.2.4--pyhdfd78af_0.img 
 
 singularity pull --name quay.io-biocontainers-motus-4.1.0--pyhdfd78af_0.img \
   docker://quay.io/biocontainers/motus:4.1.0--pyhdfd78af_0
+
+singularity pull --name quay.io-biocontainers-kraken2-2.17.1--pl5321h077b44d_0.img\
+  docker://quay.io/biocontainers/kraken2:2.17.1--pl5321h077b44d_0
+
+singularity pull --name quay.io-biocontainers-bracken-3.1--h9948957_0.img \
+  docker://quay.io/biocontainers/bracken:3.1--h9948957_0
 
 singularity pull --name quay.io-biocontainers-multiqc-1.21--pyhdfd78af_0.img \
   docker://quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0
