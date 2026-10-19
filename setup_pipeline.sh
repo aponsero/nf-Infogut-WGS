@@ -173,7 +173,7 @@ log_info "========================================="
 MOTUS_DB_DIR="${INSTALL_DIR}/databases/motus"
 cd "${MOTUS_DB_DIR}"
 
-if [ -f "db_mOTU/db_mOTU_versions" ]; then
+if [ -f "db_mOTU/mOTUsv4.0.db" ]; then
     log_warn "mOTUs database already exists. Skipping download."
 else
     log_info "Downloading mOTUs database from Zenodo..."
@@ -301,14 +301,14 @@ log_info "========================================="
 
 KRAKEN_DB_DIR="${INSTALL_DIR}/databases/kraken_db"
 
-if [ -d "${KRAKEN_DB_DIR}/kraken_db" ] && [ "$(ls -A ${KRAKEN_DB_DIR}/kraken_db)" ]; then
+if [ -f "${KRAKEN_DB_DIR}/hash.k2d" ]; then
     log_warn "Kraken2 database already exists. Skipping download."
 else
     log_info "Downloading KRAKEN2 database..."
     log_info "This may take couple of minutes (database is ~80GB)..."
     
-    mkdir -p "${KRAKEN_DB_DIR}/kraken_db"
-    cd "${KRAKEN_DB_DIR}/kraken_db"
+    mkdir -p "${KRAKEN_DB_DIR}/"
+    cd "${KRAKEN_DB_DIR}/"
 
     wget "https://genome-idx.s3.amazonaws.com/kraken/k2_standard_20260626.tar.gz"
     tar -xvzf k2_standard_20260626.tar.gz
