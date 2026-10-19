@@ -13,7 +13,7 @@
 #   ./setup_pipeline.sh /shared/pipeline_resources
 #   ./setup_pipeline.sh  (interactive mode - will prompt for directory)
 #
-# Author: Alise Ponsero
+# Author: Alise Ponsero, Petra Polakovicova
 # Version: 1.0.0
 #===============================================================================
 
@@ -167,13 +167,13 @@ log_success "All required tools are available"
 
 echo ""
 log_info "========================================="
-log_info "STEP 1/3: Downloading mOTUs database"
+log_info "STEP 1/4: Downloading mOTUs database"
 log_info "========================================="
 
 MOTUS_DB_DIR="${INSTALL_DIR}/databases/motus"
 cd "${MOTUS_DB_DIR}"
 
-if [ -f "db_mOTU/db_mOTU_versions" ]; then
+if [ -f "db_mOTU/mOTUsv4.0.db" ]; then
     log_warn "mOTUs database already exists. Skipping download."
 else
     log_info "Downloading mOTUs database from Zenodo..."
@@ -211,7 +211,7 @@ fi
 
 echo ""
 log_info "========================================="
-log_info "STEP 2/3: Downloading Singularity containers"
+log_info "STEP 2/4: Downloading Singularity containers"
 log_info "========================================="
 
 SING_DIR="${INSTALL_DIR}/singularity_cache"
@@ -222,9 +222,14 @@ declare -A CONTAINERS=(
     ["quay.io-biocontainers-fastp-0.23.4--hadf994f_3.img"]="docker://quay.io/biocontainers/fastp:0.23.4--hadf994f_3"
     ["quay.io-biocontainers-metaphlan-4.2.4--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/metaphlan:4.2.4--pyhdfd78af_0"
     ["quay.io-biocontainers-multiqc-1.21--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0"
-    ["quay.io-biocontainers-taxpasta-0.7.0--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/taxpasta:0.7.0--pyhdfd78af_0"
-    ["aponsero-infogut-motus-4.0.4.img"]="library://aponsero/infogut/motus:4.0.4"
     ["quay.io-biocontainers-motus-4.1.0--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/motus:4.1.0--pyhdfd78af_0"
+    ["quay.io-biocontainers-kraken2-2.17.1--pl5321h077b44d_0.img"]="docker://quay.io/biocontainers/kraken2:2.17.1--pl5321h077b44d_0"
+    ["quay.io-biocontainers-krakentools-1.2.1--pyh7e72e81_0.img"]="docker://quay.io/biocontainers/krakentools:1.2.1--pyh7e72e81_0"
+    ["quay.io-biocontainers-bracken-3.1--h9948957_0.img"]="docker://quay.io/biocontainers/bracken:3.1--h9948957_0"
+    ["quay.io-biocontainers-bbmap-39.52--he5f24ec_0.img"]="docker://quay.io/biocontainers/bbmap:39.52--he5f24ec_0"
+    ["quay.io-biocontainers-pandas-2.2.1.img"]="docker://quay.io/biocontainers/pandas:2.2.1"
+    ["aponsero-infogut-motus-4.0.4.img"]="library://aponsero/infogut/motus:4.0.4"
+    
 )
 
 CONTAINER_COUNT=0
@@ -257,7 +262,7 @@ done
 
 echo ""
 log_info "========================================="
-log_info "STEP 3/3: Downloading MetaPhlAn4 database"
+log_info "STEP 3/4: Downloading MetaPhlAn4 database"
 log_info "========================================="
 
 METAPHLAN_DB_DIR="${INSTALL_DIR}/databases/metaphlan4"
@@ -281,6 +286,38 @@ else
         log_success "MetaPhlAn4 database installed successfully"
     else
         log_error "Failed to install MetaPhlAn4 database"
+        exit 1
+    fi
+fi
+
+#===============================================================================
+# DOWNLOAD KRAKEN2 DATABASE
+#===============================================================================
+
+echo ""
+log_info "========================================="
+log_info "STEP 3/4: Downloading KRAKEN2 database"
+log_info "========================================="
+
+KRAKEN_DB_DIR="${INSTALL_DIR}/databases/kraken_db"
+
+if [ -f "${KRAKEN_DB_DIR}/hash.k2d" ]; then
+    log_warn "Kraken2 database already exists. Skipping download."
+else
+    log_info "Downloading KRAKEN2 database..."
+    log_info "This may take couple of minutes (database is ~80GB)..."
+    
+    mkdir -p "${KRAKEN_DB_DIR}/"
+    cd "${KRAKEN_DB_DIR}/"
+
+    wget "https://genome-idx.s3.amazonaws.com/kraken/k2_standard_20260626.tar.gz"
+    tar -xvzf k2_standard_20260626.tar.gz
+    rm k2_standard_20260626.tar.gz
+
+    if [ $? -eq 0 ]; then
+        log_success "Kraken2 database downloaded successfully"
+    else
+        log_error "Failed to download Kraken2 database"
         exit 1
     fi
 fi

@@ -34,9 +34,14 @@ include { FASTQC as FASTQC_CLEAN } from './modules/fastqc'
 include { METAPHLAN4_DB }           from './modules/metaphlan4_db'
 include { METAPHLAN4 }              from './modules/metaphlan4'
 include { MOTUS }                   from './modules/motus'
+include { KRAKEN2 }                 from './modules/kraken_bracken'
+include { BRACKEN_READLEN }          from './modules/kraken_bracken'
+include { BRACKEN }                 from './modules/kraken_bracken'
+include { KRAKENTOOLS }              from './modules/kraken_bracken'
 include { MULTIQC }                 from './modules/multiqc'
 include { METASTANDARD as METAPHLAN_METASTANDARD }        from './modules/MetaStandard'
 include { METASTANDARD as MOTUS_METASTANDARD }       from './modules/MetaStandard'
+include { METASTANDARD as BRACKEN_METASTANDARD }       from './modules/MetaStandard'
 /*
 ========================================================================================
     MAIN WORKFLOW
@@ -77,7 +82,7 @@ workflow {
     } else {
         ch_metaphlan_db = Channel.value(file(params.metaphlan_db))
     }
-    
+
     // Fixing headers 
     FIX_HEADERS(ch_input_reads)
 
@@ -96,6 +101,34 @@ workflow {
     // mOTUs profiling (parallel) - database mounted via containerOptions
     MOTUS(FASTP.out.reads)
     
+    // Kraken2 + Bracken profiling (parallel)
+    ch_kraken2_db = Channel.value(file(params.kraken2_db, checkIfExists: true))
+    KRAKEN2(FASTP.out.reads, ch_kraken2_db)
+
+
+    // Setup bracken database
+    def kmer_files = files("${params.kraken2_db}/database*mers.kmer_distrib")
+    if (!kmer_files) {
+        error "No database*mers.kmer_distrib files found in ${params.kraken2_db}"
+    }
+    def kmer_by_len = kmer_files.collectEntries { f ->
+        [ (f.name =~ /database(\d+)mers/)[0][1], f ]
+    }
+    ch_bracken_dbs = Channel.value(kmer_files)
+
+    // Detect read length per sample
+    BRACKEN_READLEN(FASTP.out.reads, ch_bracken_dbs)
+
+    // Pair each Kraken2 report with its read length and matching kmer_distrib
+    ch_bracken_in = KRAKEN2.out.kraken_report
+        .join(BRACKEN_READLEN.out.read_len, failOnMismatch: true)
+        .map { sample_id, report, read_len ->
+            tuple(sample_id, report, kmer_by_len[read_len.toString().trim()])
+        }
+        
+    BRACKEN(ch_bracken_in)
+    KRAKENTOOLS(BRACKEN.out.bracken_kreport)
+
     // MetaStandard - format standardization
     motus_files = MOTUS.out.profile.collect()
     metaphlan_files = METAPHLAN4.out.profile.collect()
@@ -103,6 +136,12 @@ workflow {
     METAPHLAN_METASTANDARD(metaphlan_files)
     MOTUS_METASTANDARD(motus_files)
 
+    bracken_files = BRACKEN.out.bracken_profile
+    .mix(KRAKENTOOLS.out.bracken_profile_mpa)
+    .collect()
+
+    BRACKEN_METASTANDARD(bracken_files)
+    
     // Collect all QC files for MultiQC
     ch_multiqc_files = Channel.empty()
     ch_multiqc_files = ch_multiqc_files.mix(FASTQC_RAW.out.zip.collect().ifEmpty([]))

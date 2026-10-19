@@ -71,6 +71,7 @@ Installation Summary:
 Resource Locations:
   - mOTUs database:       </path/to/your/installation/directory/>/databases/motus/db_mOTU
   - MetaPhlAn4 database:  </path/to/your/installation/directory/>/databases/metaphlan4/metaphlan_db
+  - Kraken2 database:     </path/to/your/installation/directory/>/databases/kraken_db
   - Containers:           </path/to/your/installation/directory/>/singularity_cache/
   - Configuration:        </path/to/your/installation/directory/>/pipeline_paths.config
   - Log file:             </path/to/your/installation/directory/>/logs/setup_20260304_110207.log
@@ -88,6 +89,8 @@ params {
     database_cache_dir    = '</path/to/your/installation/directory/>databases'
     metaphlan_db          = '</path/to/your/installation/directory/>databases/metaphlan4/metaphlan_db'
     motus_db_host         = '</path/to/your/installation/directory/>/databases/motus/db_mOTU'
+    kraken2_db            = '</path/to/your/installation/directory/>/databases/kraken_db'
+
 }
 ```
 
@@ -115,17 +118,23 @@ METAGENOMIC PROFILING PIPELINE
 Input samplesheet : test/test_samplesheet.csv
 Output directory  : results
 ===================================
-[45/c92325] FASTQC_RAW (SRR061436-test)   | 2 of 2 ✔
-[9a/a42eaf] FASTP (SRR061436-test)        | 2 of 2 ✔
-[88/8daf9d] FASTQC_CLEAN (SRR061436-test) | 2 of 2 ✔
-[ad/e1afcc] METAPHLAN4 (SRR1804209-test)  | 2 of 2 ✔
-[f8/10dc80] MOTUS (SRR061436-test)        | 2 of 2 ✔
-[65/4f2144] METAPHLAN_METASTANDARD        | 1 of 1 ✔
-[49/2b62af] MOTUS_METASTANDARD            | 1 of 1 ✔
-[88/08a15c] MULTIQC                       | 1 of 1 ✔
+[7d/14dfbf] FIX_HEADERS (1)                  [100%] 2 of 2 ✔
+[17/a22d79] FASTQC_RAW (SRR061436-test)      [100%] 2 of 2 ✔
+[60/f043d6] FASTP (SRR061436-test)           [100%] 2 of 2 ✔
+[22/3143b6] FASTQC_CLEAN (SRR061436-test)    [100%] 2 of 2 ✔
+[4a/a7a883] METAPHLAN4 (SRR061436-test)      [100%] 2 of 2 ✔
+[27/25bc5b] MOTUS (SRR061436-test)           [100%] 2 of 2 ✔
+[a6/bd14cd] KRAKEN2 (2)                      [100%] 2 of 2 ✔
+[e3/ec237b] BRACKEN_READLEN (SRR061436-test) [100%] 2 of 2 ✔
+[31/79a64f] BRACKEN (SRR061436-test)         [100%] 2 of 2 ✔
+[68/6af9e1] KRAKENTOOLS (2)                  [100%] 2 of 2 ✔
+[91/518eac] METAPHLAN_METASTANDARD           [100%] 1 of 1 ✔
+[28/32d9da] MOTUS_METASTANDARD               [100%] 1 of 1 ✔
+[86/ac1493] BRACKEN_METASTANDARD             [100%] 1 of 1 ✔
+[25/3724e0] MULTIQC                          [100%] 1 of 1 ✔
 Pipeline completed at: 2026-03-06T10:23:05.213553083+01:00
 Execution status: SUCCESS
-Duration: 5m 21s
+Duration: 5m 55s
 Output directory: results
 ```
 
@@ -133,18 +142,19 @@ Output directory: results
 
 ## 5. Looking at Results
 
-After a successful run, a `results/` directory will be created inside `nf-Infogut-WGS/`. The most important outputs are in the `06_metastandard/` folder, which contains standardized TSV files from mOTUs and MetaPhlAn collapsed to species level using a unified format.
+After a successful run, a `results/` directory will be created inside `nf-Infogut-WGS/`. The most important outputs are in the `07_metastandard/` folder, which contains standardized TSV files from mOTUs and MetaPhlAn collapsed to species level using a unified format.
 
 ```bash
-cd results/06_metastandard
+cd results/07_metastandard
 ls
 ```
 
-You will see two files:
+You will see three files:
 
 ```
 metaphlan4_run01_species.tsv
 motus_run01_species.tsv
+bracken_run01_species.tsv
 ```
 
 ---
@@ -166,12 +176,13 @@ bash validate_results.sh
 A successful validation will show:
 
 ```
-Comparing 2 files by content...
+Comparing 3 tools by content (column-order independent)...
 ----------------------------------------
-MATCH: metaphlan4_TestRun_species.tsv  <->  metaphlan4_run01_species.tsv
-MATCH: motus_TestRun_species.tsv  <->  motus_run01_species.tsv
+✅ MATCH:    metaphlan4_TestRun_species.tsv  <->  metaphlan4_run01_species.tsv
+✅ MATCH:    motus_TestRun_species.tsv  <->  motus_run01_species.tsv
+✅ MATCH:    bracken_TestRun_species.tsv  <->  bracken_run01_species.tsv
 ----------------------------------------
-Results: 2 passed, 0 failed
+Results: 3 passed, 0 failed
 ```
 
 ---
