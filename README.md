@@ -2,7 +2,7 @@
 
 ## Overview
 
-This Nextflow pipeline performs comprehensive metagenomic profiling of paired-end whole genome sequencing (WGS) data. The pipeline integrates quality control, read preprocessing, and taxonomic profiling using two complementary tools (MetaPhlAn4 and mOTUs) to provide robust microbial community characterization.
+This Nextflow pipeline performs comprehensive metagenomic profiling of paired-end whole genome sequencing (WGS) data. The pipeline integrates quality control, read preprocessing, and taxonomic profiling using using three complementary approaches: marker-gene profiling with MetaPhlAn4 and mOTUs, and whole-genome k-mer classification with Kraken2 + Bracken.
 
 **Pipeline Version:** 1.0.0  
 **Author:** Alise Ponsero  & Petra Polakovicova
@@ -27,11 +27,15 @@ graph TD
     C --> D[FastQC - Clean Reads]
     C --> E[MetaPhlAn4 - Taxonomic Profiling]
     C --> F[mOTUs - Taxonomic Profiling]
+    C --> K[Kraken2 -Taxonomic Profiling]
+    K --> L[Bracken - Abundance Re-estimation]
+    L --> M[Bracken Profiles]
     B --> G[MultiQC - Aggregated Report]
     C --> G
     D --> G
     E --> H[MetaPhlAn4 Profiles]
     F --> I[mOTUs Profiles]
+    M --> X[MetaStandard]
     I --> X[MetaStandard]
     H --> X[MetaStandard]
     X --> Y[mOTUs standardized file]
@@ -127,6 +131,7 @@ The pipeline includes an automated setup script that downloads all required data
 1. Creates directory structure:
    - `databases/motus/` - mOTUs database (~7 GB)
    - `databases/metaphlan4/` - MetaPhlAn4 database (~35 GB)
+   - `databases/kraken2/` - 
    - `singularity_cache/` - Container images (~3 GB)
    - `logs/` - Setup logs
 
@@ -138,10 +143,14 @@ The pipeline includes an automated setup script that downloads all required data
    - MetaPhlAn v4.2.4
    - mOTUs v4.1.0
    - MultiQC v1.21
+   - Kraken2 v2.17.1
+   - Bracken v3.1.
 
 4. Downloads and installs MetaPhlAn4 database
 
-5. Generates a configuration file (`pipeline_paths.config`) with all paths
+5. Downloads the Kraken2 Standard database
+
+6. Generates a configuration file (`pipeline_paths.config`) with all paths
 
 **After setup completes:**
 
@@ -159,7 +168,7 @@ nextflow run main.nf \
 ```
 
 > [!NOTE]
-> After running the setup script, the default database paths in `nextflow.config` point to `./databases/motus/db_mOTU` and `./databases/metaphlan4/metaphlan_db`. If you installed to a different location, either use the generated `pipeline_paths.config` file or specify paths via command-line parameters.
+> After running the setup script, the default database paths in `nextflow.config` point to `./databases/motus/db_mOTU`, `./databases/metaphlan4/metaphlan_db`, and `./databases/motus/kraken_db`. If you installed to a different location, either use the generated `pipeline_paths.config` file or specify paths via command-line parameters.
 
 ### Manual Installation
 
@@ -203,6 +212,9 @@ singularity pull --name quay.io-biocontainers-bracken-3.1--h9948957_0.img \
 
 singularity pull --name quay.io-biocontainers-multiqc-1.21--pyhdfd78af_0.img \
   docker://quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0
+
+singularity pull --name aponsero-infogut-motus-4.0.4.img \
+  library://aponsero/infogut/motus:4.0.4
 ```
 
 **4. Download MetaPhlAn4 database:**
@@ -214,7 +226,18 @@ singularity exec ../../singularity_cache/quay.io-biocontainers-metaphlan-4.2.4--
   metaphlan --install --index latest --db_dir metaphlan_db
 ```
 
-**5. Configure pipeline:**
+**5. Download Kraken2 database:**
+
+```bash
+mkdir -p ../databases/kraken_db
+cd ../databases/kraken_db
+
+wget "https://genome-idx.s3.amazonaws.com/kraken/k2_standard_20260626.tar.gz"
+tar -xvzf k2_standard_20260626.tar.gz
+rm k2_standard_20260626.tar.gz
+```
+
+**6. Configure pipeline:**
 
 Edit `nextflow.config` or create a custom config file with your paths:
 ```groovy
@@ -223,6 +246,7 @@ params {
     database_cache_dir    = '/path/to/pipeline_resources/databases'
     metaphlan_db          = '/path/to/pipeline_resources/databases/metaphlan4/metaphlan_db'
     motus_db_host         = '/path/to/pipeline_resources/databases/motus/'
+    kraken_db         = '/path/to/pipeline_resources/databases/kraken_db/'
 }
 ```
 
@@ -234,8 +258,9 @@ Ensure sufficient disk space before installation:
 |-----------|------|-------------|
 | mOTUs database | ~7 GB | Compressed: ~10 GB, Extracted: ~7 GB |
 | MetaPhlAn4 database | ~35 GB | Downloaded and indexed |
-| Singularity containers | ~3 GB | All 5 container images |
-| **Total** | **~45 GB** | Minimum required space |
+| Kraken2 database | ~105 GB | Compressed: ~80GB, Extracted: ~104GB |
+| Singularity containers | ~4 GB | All 11 container images |
+| **Total** | **~152GB** | Minimum required space |
 
 ---
 
@@ -370,7 +395,8 @@ nextflow run main.nf \
   --input samplesheet.csv \
   --outdir results \
   --motus_db_host /path/to/motus/database \
-  --metaphlan_db /path/to/metaphlan/database
+  --metaphlan_db path/to/metaphlan/database \
+  --kraken2_db path/to/kraken2/database
 ```
 
 ### Using Execution Profiles
@@ -669,7 +695,11 @@ results/
 ├── 05_motus/
 │   ├── sample1_motus_profile.txt
 │   └── sample1_motus.log
-├── 06_multiqc/
+├── 06_bracken/
+│   ├── sample1.bracken.mpa.txt
+│   ├── sample1.bracken
+│   └── sample1.bracken.kreport
+├── 07_multiqc/
 │   ├── multiqc_report.html
 │   └── multiqc_report_data/
 └── pipeline_info/
@@ -688,7 +718,8 @@ results/
 | `03_fastqc_clean/` | FastQC reports | Quality metrics for cleaned reads |
 | `04_metaphlan4/` | Taxonomic profiles | MetaPhlAn4 relative abundance tables |
 | `05_motus/` | Taxonomic profiles | mOTUs relative abundance tables |
-| `06_multiqc/` | Aggregated report | Combined QC metrics from all samples |
+| `06_bracken/` | Taxonomic profiles | Kracken2 + Bracken relative abundance tables |
+| `07_multiqc/` | Aggregated report | Combined QC metrics from all samples |
 | `pipeline_info/` | Execution reports | Pipeline execution statistics and DAG |
 
 ---
@@ -702,5 +733,6 @@ If you use this pipeline, please cite:
 - **Fastp:** Chen, S., et al. (2018). fastp: an ultra-fast all-in-one FASTQ preprocessor. Bioinformatics, 34(17), i884-i890.
 - **MetaPhlAn4:** Blanco-Míguez, A., et al. (2023). Extending and improving metagenomic taxonomic profiling with uncharacterized species using MetaPhlAn 4. Nature Biotechnology, 41, 1633-1644.
 - **mOTUs:** Ruscheweyh, H.J., et al. (2022). Cultivation-independent genomes greatly expand taxonomic-profiling capabilities of mOTUs across various environments. Microbiome, 10, 212.
+- **Kraken2**: Wood, D.E., Lu, J., Langmead, B. (2019). Improved metagenomic analysis with Kraken 2. Genome Biology, 20, 257.
+- **Bracken**: Lu, J., Breitwieser, F.P., Thielen, P., Salzberg, S.L. (2017). Bracken: estimating species abundance in metagenomics data. PeerJ Computer Science, 3, e104.
 - **MultiQC:** Ewels, P., et al. (2016). MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics, 32(19), 3047-3048.
-
