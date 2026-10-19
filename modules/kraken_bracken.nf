@@ -1,8 +1,8 @@
 process KRAKEN2 {
     input:
     tuple val(sample_id), path(read1), path(read2)
-    path db_files, stageAs: 'k2db/*'     // hash.k2d, opts.k2d, taxo.k2d
-
+    path db_files
+    
     output:
     tuple val(sample_id), path("${sample_id}.kreport"), emit: kraken_report
 
@@ -30,7 +30,7 @@ process KRAKEN2 {
 
     """
     k2 classify \\
-        --db k2db \\
+        --db ${db_files} \\
         --threads ${task.cpus} \\
         --paired \\
         ${confidence} \\
@@ -51,14 +51,65 @@ process KRAKEN2 {
     """
 }
 
+process BRACKEN_READLEN {
+    tag "${sample_id}"
+
+    input:
+    tuple val(sample_id), path(read1), path(read2)
+    path kraken2_dbs
+
+    output:
+    tuple val(sample_id), env(READ_LEN),           emit: read_len
+
+    script:
+    def r1 = read1
+
+    """
+    # Median read length of the first 1000 reads (R1)
+    case "${r1}" in
+        *.gz) DECOMP="gzip -dc" ;;
+        *)    DECOMP="cat" ;;
+    esac
+
+    # '|| true' absorbs the SIGPIPE when awk exits early
+    { \$DECOMP ${r1} || true; } \\
+        | awk -v max=1000 'NR % 4 == 2 { print length(\$0); n++ } n >= max { exit }' \\
+        | sort -n > read_lengths.txt
+
+    N=\$(wc -l < read_lengths.txt)
+    if [ "\$N" -eq 0 ]; then
+        echo "ERROR: no reads found in ${r1}" >&2
+        exit 1
+    fi
+
+    MEDIAN=\$(awk -v n="\$N" '{ a[NR] = \$1 }
+        END { if (n % 2) print a[(n + 1) / 2]; else print int((a[n / 2] + a[n / 2 + 1]) / 2) }' read_lengths.txt)
+
+    # Pick the closest available kmer_distrib (ties -> shorter)
+    READ_LEN=\$( { ls ${kraken2_dbs} 2>/dev/null || true; } \\
+        | sed -E 's/.*database([0-9]+)mers\\.kmer_distrib/\\1/' \\
+        | sort -n \\
+        | awk -v m="\$MEDIAN" '{ d = (\$1 > m) ? \$1 - m : m - \$1
+                                 if (bd == "" || d < bd) { bd = d; best = \$1 } }
+                               END { print best }')
+
+    if [ -z "\$READ_LEN" ]; then
+        echo "ERROR: no database*mers.kmer_distrib files in ${kraken2_dbs}" >&2
+        exit 1
+    fi
+
+    printf "sample\\tmedian_read_length\\tbracken_read_length\\n${sample_id}\\t%s\\t%s\\n" \\
+        "\$MEDIAN" "\$READ_LEN" > ${sample_id}.read_length.tsv
+    echo "[${sample_id}] median read length: \$MEDIAN -> using database\${READ_LEN}mers.kmer_distrib"
+    """
+}
 
 process BRACKEN {
     tag "${sample_id}"
     publishDir "${params.outdir}/06_bracken", mode: 'copy'
 
     input:
-    tuple val(sample_id), path(kraken_report)
-    path db
+    tuple val(sample_id), path(kraken_report), path(db)
 
     output:
     path "${sample_id}.bracken",                                 emit: bracken_profile

@@ -35,6 +35,7 @@ include { METAPHLAN4_DB }           from './modules/metaphlan4_db'
 include { METAPHLAN4 }              from './modules/metaphlan4'
 include { MOTUS }                   from './modules/motus'
 include { KRAKEN2 }                 from './modules/kraken_bracken'
+include { BRACKEN_READLEN }          from './modules/kraken_bracken'
 include { BRACKEN }                 from './modules/kraken_bracken'
 include { KRAKENTOOLS }              from './modules/kraken_bracken'
 include { MULTIQC }                 from './modules/multiqc'
@@ -81,16 +82,6 @@ workflow {
     } else {
         ch_metaphlan_db = Channel.value(file(params.metaphlan_db))
     }
-    
-    // Setup Kraken2 database
-    ch_kraken_db = Channel.value(
-    ['hash.k2d', 'opts.k2d', 'taxo.k2d'].collect { f ->
-        file("${params.kraken2_db}/${f}", checkIfExists: true)
-    }
-    )
-
-    // Setup bracken database
-    ch_bracken_db = Channel.value(file("${params.kraken2_db}/database${params.bracken_read_len}mers.kmer_distrib"))
 
     // Fixing headers 
     FIX_HEADERS(ch_input_reads)
@@ -111,8 +102,31 @@ workflow {
     MOTUS(FASTP.out.reads)
     
     // Kraken2 + Bracken profiling (parallel)
-    KRAKEN2(FASTP.out.reads, ch_kraken_db)
-    BRACKEN(KRAKEN2.out.kraken_report, ch_bracken_db)
+    ch_kraken2_db = Channel.value(file(params.kraken2_db, checkIfExists: true))
+    KRAKEN2(FASTP.out.reads, ch_kraken2_db)
+
+
+    // Setup bracken database
+    def kmer_files = files("${params.kraken2_db}/database*mers.kmer_distrib")
+    if (!kmer_files) {
+        error "No database*mers.kmer_distrib files found in ${params.kraken2_db}"
+    }
+    def kmer_by_len = kmer_files.collectEntries { f ->
+        [ (f.name =~ /database(\d+)mers/)[0][1], f ]
+    }
+    ch_bracken_dbs = Channel.value(kmer_files)
+
+    // Detect read length per sample
+    BRACKEN_READLEN(FASTP.out.reads, ch_bracken_dbs)
+
+    // Pair each Kraken2 report with its read length and matching kmer_distrib
+    ch_bracken_in = KRAKEN2.out.kraken_report
+        .join(BRACKEN_READLEN.out.read_len, failOnMismatch: true)
+        .map { sample_id, report, read_len ->
+            tuple(sample_id, report, kmer_by_len[read_len.toString().trim()])
+        }
+        
+    BRACKEN(ch_bracken_in)
     KRAKENTOOLS(BRACKEN.out.bracken_kreport)
 
     // MetaStandard - format standardization

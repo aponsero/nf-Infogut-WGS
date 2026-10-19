@@ -1,13 +1,9 @@
 #!/bin/bash
 DIR1="ground_truth"
-DIR2="../results/06_metastandard"
-files1=($(ls "$DIR1" | sort))
-files2=($(ls "$DIR2" | sort))
-if [ ${#files1[@]} -ne ${#files2[@]} ]; then
-    echo "Directories have different number of files: ${#files1[@]} vs ${#files2[@]}"
-    exit 1
-fi
-echo "Comparing ${#files1[@]} files by content (column-order independent)..."
+DIR2="../results/07_metastandard"
+TOOLS=(metaphlan4 motus bracken)
+
+echo "Comparing ${#TOOLS[@]} tools by content (column-order independent)..."
 echo "----------------------------------------"
 passed=0
 failed=0
@@ -65,19 +61,27 @@ compare_tsv() {
             }
          ' FS='\t' "$f2")
 }
-for i in "${!files1[@]}"; do
-    f1="$DIR1/${files1[$i]}"
-    f2="$DIR2/${files2[$i]}"
+for tool in "${TOOLS[@]}"; do
+    f1=$(ls "$DIR1"/${tool}_*_species.tsv 2>/dev/null | head -1)
+    f2=$(ls "$DIR2"/${tool}_*_species.tsv 2>/dev/null | head -1)
+
+    if [ -z "$f1" ] || [ -z "$f2" ]; then
+        echo "❌ MISSING:  ${tool}  (ground truth: ${f1:-none}, result: ${f2:-none})"
+        ((failed++))
+        continue
+    fi
+
     result=$(compare_tsv "$f1" "$f2")
     if [ -z "$result" ]; then
-        echo "✅ MATCH:    ${files1[$i]}  <->  ${files2[$i]}"
+        echo "✅ MATCH:    $(basename "$f1")  <->  $(basename "$f2")"
         ((passed++))
     else
-        echo "❌ MISMATCH: ${files1[$i]}  <->  ${files2[$i]}"
+        echo "❌ MISMATCH: $(basename "$f1")  <->  $(basename "$f2")"
         echo "$result"
         ((failed++))
     fi
 done
+
 echo "----------------------------------------"
 echo "Results: $passed passed, $failed failed"
 if [ $failed -gt 0 ]; then exit 1; fi

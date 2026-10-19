@@ -13,7 +13,7 @@
 #   ./setup_pipeline.sh /shared/pipeline_resources
 #   ./setup_pipeline.sh  (interactive mode - will prompt for directory)
 #
-# Author: Alise Ponsero
+# Author: Alise Ponsero, Petra Polakovicova
 # Version: 1.0.0
 #===============================================================================
 
@@ -222,11 +222,14 @@ declare -A CONTAINERS=(
     ["quay.io-biocontainers-fastp-0.23.4--hadf994f_3.img"]="docker://quay.io/biocontainers/fastp:0.23.4--hadf994f_3"
     ["quay.io-biocontainers-metaphlan-4.2.4--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/metaphlan:4.2.4--pyhdfd78af_0"
     ["quay.io-biocontainers-multiqc-1.21--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/multiqc:1.21--pyhdfd78af_0"
-    ["quay.io-biocontainers-taxpasta-0.7.0--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/taxpasta:0.7.0--pyhdfd78af_0"
-    ["aponsero-infogut-motus-4.0.4.img"]="library://aponsero/infogut/motus:4.0.4"
     ["quay.io-biocontainers-motus-4.1.0--pyhdfd78af_0.img"]="docker://quay.io/biocontainers/motus:4.1.0--pyhdfd78af_0"
     ["quay.io-biocontainers-kraken2-2.17.1--pl5321h077b44d_0.img"]="docker://quay.io/biocontainers/kraken2:2.17.1--pl5321h077b44d_0"
     ["quay.io-biocontainers-krakentools-1.2.1--pyh7e72e81_0.img"]="docker://quay.io/biocontainers/krakentools:1.2.1--pyh7e72e81_0"
+    ["quay.io-biocontainers-bracken-3.1--h9948957_0.img"]="docker://quay.io/biocontainers/bracken:3.1--h9948957_0"
+    ["quay.io-biocontainers-bbmap-39.52--he5f24ec_0.img"]="docker://quay.io/biocontainers/bbmap:39.52--he5f24ec_0"
+    ["quay.io-biocontainers-pandas-2.2.1.img"]="docker://quay.io/biocontainers/pandas:2.2.1"
+    ["aponsero-infogut-motus-4.0.4.img"]="library://aponsero/infogut/motus:4.0.4"
+    
 )
 
 CONTAINER_COUNT=0
@@ -302,7 +305,7 @@ if [ -d "${KRAKEN_DB_DIR}/kraken_db" ] && [ "$(ls -A ${KRAKEN_DB_DIR}/kraken_db)
     log_warn "Kraken2 database already exists. Skipping download."
 else
     log_info "Downloading KRAKEN2 database..."
-    log_info "This may take couple of minutes (database is ~8GB)..."
+    log_info "This may take couple of minutes (database is ~80GB)..."
     
     mkdir -p "${KRAKEN_DB_DIR}/kraken_db"
     cd "${KRAKEN_DB_DIR}/kraken_db"
